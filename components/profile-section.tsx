@@ -2,14 +2,15 @@
 
 import { motion } from "framer-motion"
 import { Github } from "lucide-react"
+import { TechIcons } from "./tech-icons"
 
 const technologies = [
-  "React",
-  "Next.js",
-  "Golang",
-  "Rust",
-  "Python",
-  "Tauri2"
+  { name: "React", Icon: TechIcons.React },
+  { name: "Next.js", Icon: TechIcons["Next.js"] },
+  { name: "Golang", Icon: TechIcons.Golang },
+  { name: "Rust", Icon: TechIcons.Rust },
+  { name: "Python", Icon: TechIcons.Python },
+  { name: "Tauri2", Icon: TechIcons.Tauri2 },
 ]
 
 export function ProfileSection() {
@@ -38,21 +39,22 @@ export function ProfileSection() {
       </motion.div>
 
       <motion.div
-        className="flex flex-wrap justify-center gap-3 max-w-2xl"
+        className="flex flex-wrap justify-center gap-2.5 max-w-3xl"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.8 }}
       >
         {technologies.map((tech, index) => (
           <motion.div
-            key={tech}
-            className="px-4 py-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full text-sm text-gray-300 hover:bg-white/10 transition-colors"
+            key={tech.name}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full text-sm text-gray-300 hover:bg-white/10 transition-colors"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3, delay: 0.8 + index * 0.1 }}
             whileHover={{ scale: 1.05 }}
           >
-            {tech}
+            <tech.Icon />
+            <span>{tech.name}</span>
           </motion.div>
         ))}
       </motion.div>

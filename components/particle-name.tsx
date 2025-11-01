@@ -130,7 +130,7 @@ export function ParticleName({ onComplete }: ParticleNameProps = {}) {
   const particlesRef = useRef<Particle[]>([])
   const completedRef = useRef(false)
 
-  const pixelSteps = 6
+  const pixelSteps = 12
   const drawAsPoints = true
 
   const generateRandomPos = (
@@ -152,7 +152,7 @@ export function ParticleName({ onComplete }: ParticleNameProps = {}) {
     const offscreenCtx = offscreenCanvas.getContext("2d")!
 
     offscreenCtx.fillStyle = "white"
-    offscreenCtx.font = "bold 120px Arial"
+    offscreenCtx.font = "bold 240px Arial"
     offscreenCtx.textAlign = "center"
     offscreenCtx.textBaseline = "middle"
     offscreenCtx.fillText("xuyu", canvas.width / 2, canvas.height / 2)
@@ -233,8 +233,7 @@ export function ParticleName({ onComplete }: ParticleNameProps = {}) {
     const ctx = canvas.getContext("2d")!
     const particles = particlesRef.current
 
-    ctx.fillStyle = "rgba(0, 0, 0, 0.1)"
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     let allSettled = true
     for (let i = particles.length - 1; i >= 0; i--) {

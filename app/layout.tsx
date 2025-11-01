@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "xuyu - 全栈工程师",
+  title: "xuyu",
   description: "关山难越，谁悲失路之人；萍水相逢，尽是他乡之客",
 }
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { AnimatedBackground } from "@/components/animated-background"
+import { StarfieldBackground } from "@/components/starfield-background"
 import { ParticleName } from "@/components/particle-name"
 import { ProfileSection } from "@/components/profile-section"
 
@@ -11,7 +11,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen w-full bg-black overflow-hidden">
-      <AnimatedBackground />
+      <StarfieldBackground />
 
       <div className="relative min-h-screen w-full">
         <motion.div
