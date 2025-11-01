@@ -62,7 +62,7 @@ export function ProfileSection({ showContent }: ProfileSectionProps) {
       </motion.div>
 
       <motion.a
-        href="https://github.com/xumouren-dev"
+        href="https://github.com/xuyu-dev"
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center space-x-2 px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full hover:bg-white/20 transition-all group"
