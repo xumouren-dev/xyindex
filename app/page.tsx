@@ -8,6 +8,7 @@ import { ProfileSection } from "@/components/profile-section"
 
 export default function HomePage() {
   const [isComplete, setIsComplete] = useState(false)
+  const [showContent, setShowContent] = useState(false)
 
   return (
     <div className="min-h-screen w-full bg-black overflow-hidden">
@@ -20,7 +21,12 @@ export default function HomePage() {
           animate={{
             y: isComplete ? "-20vh" : "0vh",
           }}
-          transition={{ duration: 1.5, ease: "easeInOut" }}
+          transition={{ duration: 1.0, ease: "easeInOut" }}
+          onAnimationComplete={() => {
+            if (isComplete) {
+              setShowContent(true)
+            }
+          }}
         >
           <div className="w-full h-full relative">
             <ParticleName onComplete={() => setIsComplete(true)} />
@@ -30,13 +36,13 @@ export default function HomePage() {
         <motion.div
           initial={{ opacity: 0, top: "50vh" }}
           animate={{
-            opacity: isComplete ? 1 : 0,
-            top: isComplete ? "48vh" : "50vh",
+            opacity: showContent ? 1 : 0,
+            top: showContent ? "48vh" : "50vh",
           }}
-          transition={{ duration: 1.2, delay: isComplete ? 0.5 : 0, ease: "easeOut" }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
           className="absolute left-0 right-0"
         >
-          <ProfileSection />
+          <ProfileSection showContent={showContent} />
         </motion.div>
       </div>
     </div>
