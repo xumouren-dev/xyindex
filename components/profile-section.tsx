@@ -26,8 +26,9 @@ export function ProfileSection({ showContent }: ProfileSectionProps) {
         animate={showContent ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
-        <h2 className="text-2xl md:text-3xl font-bold gradient-text leading-relaxed">
-          关山难越，谁悲失路之人；萍水相逢，尽是他乡之客
+        <h2 className="text-2xl md:text-3xl font-bold gradient-text leading-relaxed flex flex-col md:flex-row md:gap-2 items-center">
+          <span>关山难越，谁悲失路之人</span>
+          <span>萍水相逢，尽是他乡之客</span>
         </h2>
       </motion.div>
 
