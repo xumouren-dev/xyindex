@@ -16,13 +16,16 @@ class Particle {
   vel: Vector2D = { x: 0, y: 0 }
   acc: Vector2D = { x: 0, y: 0 }
   target: Vector2D = { x: 0, y: 0 }
+  baseX = 0
+  baseY = 0
 
-  closeEnoughTarget = 100
+  closeEnoughTarget = 200
   maxSpeed = 5.0
   maxForce = 0.5
   particleSize = 10
   isKilled = false
   settled = false
+  glitterPhase = 0
 
   startColor = { r: 0, g: 0, b: 0 }
   targetColor = { r: 0, g: 0, b: 0 }
@@ -87,13 +90,22 @@ class Particle {
     this.pos.y += this.vel.y
     this.acc.x = 0
     this.acc.y = 0
+
+    // 根据距离动态调整颜色，接近时变亮
+    // 使用更大的淡入距离，让粒子在远处就可见
+    const fadeDistance = 1200
+    if (distance < fadeDistance) {
+      const targetWeight = 1 - (distance / fadeDistance)
+      // 平滑过渡到目标权重
+      this.colorWeight += (targetWeight - this.colorWeight) * 0.1
+      this.colorWeight = Math.max(0, Math.min(1, this.colorWeight))
+    } else {
+      // 即使很远也保持微弱可见
+      this.colorWeight = Math.max(this.colorWeight, 0.05)
+    }
   }
 
   draw(ctx: CanvasRenderingContext2D, drawAsPoints: boolean) {
-    if (this.colorWeight < 1.0) {
-      this.colorWeight = Math.min(this.colorWeight + this.colorBlendRate, 1.0)
-    }
-
     const currentColor = {
       r: Math.round(this.startColor.r + (this.targetColor.r - this.startColor.r) * this.colorWeight),
       g: Math.round(this.startColor.g + (this.targetColor.g - this.startColor.g) * this.colorWeight),
@@ -143,20 +155,41 @@ export function ParticleName({ onComplete }: ParticleNameProps = {}) {
   const animationRef = useRef<number>()
   const particlesRef = useRef<Particle[]>([])
   const completedRef = useRef(false)
+  const mousePositionRef = useRef({ x: 0, y: 0 })
+  const isTouchingRef = useRef(false)
 
-  const pixelSteps = 12
+  const pixelSteps = 5
   const drawAsPoints = true
 
-  const generateRandomPos = (
-    x: number,
-    y: number,
-    mag: number
-  ): Vector2D => {
-    const angle = Math.random() * Math.PI * 2
-    const startX = x + Math.cos(angle) * mag
-    const startY = y + Math.sin(angle) * mag
+  const generateRandomPos = (canvas: HTMLCanvasElement): Vector2D => {
+    // 从屏幕外围随机生成位置，距离更远
+    const side = Math.floor(Math.random() * 4)
+    const minMargin = 300 // 最小边缘距离
+    const maxMargin = 600 // 最大边缘距离
+    const margin = minMargin + Math.random() * (maxMargin - minMargin)
 
-    return { x: startX, y: startY }
+    switch (side) {
+      case 0: // 顶部
+        return {
+          x: Math.random() * (canvas.width + margin * 2) - margin,
+          y: -margin
+        }
+      case 1: // 右侧
+        return {
+          x: canvas.width + margin,
+          y: Math.random() * (canvas.height + margin * 2) - margin
+        }
+      case 2: // 底部
+        return {
+          x: Math.random() * (canvas.width + margin * 2) - margin,
+          y: canvas.height + margin
+        }
+      default: // 左侧
+        return {
+          x: -margin,
+          y: Math.random() * (canvas.height + margin * 2) - margin
+        }
+    }
   }
 
   const createName = (canvas: HTMLCanvasElement) => {
@@ -207,18 +240,17 @@ export function ParticleName({ onComplete }: ParticleNameProps = {}) {
         } else {
           particle = new Particle()
 
-          const randomPos = generateRandomPos(
-            canvas.width / 2,
-            canvas.height / 2,
-            (canvas.width + canvas.height) / 2
-          )
+          const randomPos = generateRandomPos(canvas)
           particle.pos.x = randomPos.x
           particle.pos.y = randomPos.y
 
           particle.maxSpeed = Math.random() * 8 + 10
-          particle.maxForce = particle.maxSpeed * 0.08
-          particle.particleSize = Math.random() * 6 + 6
-          particle.colorBlendRate = Math.random() * 0.03 + 0.015
+          particle.maxForce = particle.maxSpeed * 0.1
+          particle.particleSize = Math.random() * 2 + 1.5
+
+          // 设置初始微弱可见颜色
+          particle.startColor = { r: 50, g: 50, b: 50 }
+          particle.colorWeight = 0.05
 
           particles.push(particle)
         }
@@ -233,6 +265,9 @@ export function ParticleName({ onComplete }: ParticleNameProps = {}) {
 
         particle.target.x = x
         particle.target.y = y
+        particle.baseX = x
+        particle.baseY = y
+        particle.glitterPhase = Math.random() * Math.PI * 2
       }
     }
 
@@ -250,18 +285,71 @@ export function ParticleName({ onComplete }: ParticleNameProps = {}) {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    let allSettled = true
+    const { x: mouseX, y: mouseY } = mousePositionRef.current
+    const maxDistance = 120
+
+    let settledCount = 0
     for (let i = particles.length - 1; i >= 0; i--) {
       const particle = particles[i]
-      particle.move()
-      particle.draw(ctx, drawAsPoints)
 
-      const distance = Math.sqrt(
+      if (!particle.settled) {
+        particle.move()
+      }
+
+      const dx = mouseX - particle.pos.x
+      const dy = mouseY - particle.pos.y
+      const distance = Math.sqrt(dx * dx + dy * dy)
+
+      particle.glitterPhase += 0.05
+
+      if (distance < maxDistance && (isTouchingRef.current || !('ontouchstart' in window))) {
+        const force = (maxDistance - distance) / maxDistance
+        const angle = Math.atan2(dy, dx)
+        const moveX = Math.cos(angle) * force * 30
+        const moveY = Math.sin(angle) * force * 30
+
+        particle.pos.x = particle.baseX - moveX
+        particle.pos.y = particle.baseY - moveY
+
+        const glitterIntensity = (Math.sin(particle.glitterPhase) + 1) / 2
+        const isBlue = Math.sin(particle.glitterPhase * 2) > 0
+
+        if (isBlue) {
+          const blueIntensity = Math.floor(135 + glitterIntensity * 120)
+          ctx.fillStyle = `rgb(${Math.floor(blueIntensity * 0.6)}, ${Math.floor(blueIntensity * 0.8)}, ${blueIntensity})`
+        } else {
+          const whiteIntensity = Math.floor(200 + glitterIntensity * 55)
+          ctx.fillStyle = `rgb(${whiteIntensity}, ${whiteIntensity}, ${whiteIntensity})`
+        }
+      } else {
+        if (particle.settled) {
+          particle.pos.x += (particle.baseX - particle.pos.x) * 0.15
+          particle.pos.y += (particle.baseY - particle.pos.y) * 0.15
+        }
+
+        const currentColor = {
+          r: Math.round(particle.startColor.r + (particle.targetColor.r - particle.startColor.r) * particle.colorWeight),
+          g: Math.round(particle.startColor.g + (particle.targetColor.g - particle.startColor.g) * particle.colorWeight),
+          b: Math.round(particle.startColor.b + (particle.targetColor.b - particle.startColor.b) * particle.colorWeight),
+        }
+        ctx.fillStyle = `rgb(${currentColor.r}, ${currentColor.g}, ${currentColor.b})`
+      }
+
+      if (drawAsPoints) {
+        const size = particle.particleSize
+        ctx.fillRect(particle.pos.x, particle.pos.y, size, size)
+      } else {
+        ctx.beginPath()
+        ctx.arc(particle.pos.x, particle.pos.y, particle.particleSize / 2, 0, Math.PI * 2)
+        ctx.fill()
+      }
+
+      const distanceToTarget = Math.sqrt(
         Math.pow(particle.pos.x - particle.target.x, 2) +
         Math.pow(particle.pos.y - particle.target.y, 2)
       )
-      if (distance > 10) {
-        allSettled = false
+      if (distanceToTarget < 20) {
+        settledCount++
       }
 
       if (particle.isKilled) {
@@ -276,7 +364,9 @@ export function ParticleName({ onComplete }: ParticleNameProps = {}) {
       }
     }
 
-    if (allSettled && !completedRef.current && particles.length > 0) {
+    // 当95%的粒子到达目标位置时判定为完成
+    const completionThreshold = 0.95
+    if (settledCount >= particles.length * completionThreshold && !completedRef.current && particles.length > 0) {
       completedRef.current = true
       setTimeout(() => {
         onComplete?.()
@@ -298,6 +388,37 @@ export function ParticleName({ onComplete }: ParticleNameProps = {}) {
       }
     }
 
+    const handleMove = (x: number, y: number) => {
+      const rect = canvas.getBoundingClientRect()
+      mousePositionRef.current = { x: x - rect.left, y: y - rect.top }
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      handleMove(e.clientX, e.clientY)
+    }
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        e.preventDefault()
+        handleMove(e.touches[0].clientX, e.touches[0].clientY)
+      }
+    }
+
+    const handleTouchStart = () => {
+      isTouchingRef.current = true
+    }
+
+    const handleTouchEnd = () => {
+      isTouchingRef.current = false
+      mousePositionRef.current = { x: 0, y: 0 }
+    }
+
+    const handleMouseLeave = () => {
+      if (!('ontouchstart' in window)) {
+        mousePositionRef.current = { x: 0, y: 0 }
+      }
+    }
+
     resizeCanvas()
     createName(canvas)
     animate()
@@ -308,12 +429,22 @@ export function ParticleName({ onComplete }: ParticleNameProps = {}) {
     }
 
     window.addEventListener("resize", handleResize)
+    canvas.addEventListener("mousemove", handleMouseMove)
+    canvas.addEventListener("touchmove", handleTouchMove, { passive: false })
+    canvas.addEventListener("mouseleave", handleMouseLeave)
+    canvas.addEventListener("touchstart", handleTouchStart)
+    canvas.addEventListener("touchend", handleTouchEnd)
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)
       }
       window.removeEventListener("resize", handleResize)
+      canvas.removeEventListener("mousemove", handleMouseMove)
+      canvas.removeEventListener("touchmove", handleTouchMove)
+      canvas.removeEventListener("mouseleave", handleMouseLeave)
+      canvas.removeEventListener("touchstart", handleTouchStart)
+      canvas.removeEventListener("touchend", handleTouchEnd)
     }
   }, [])
 
